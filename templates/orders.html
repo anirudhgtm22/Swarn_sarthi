@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Book Now{% endblock %}
+{% load static %}
+{% block head %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{% static 'book.css' %}">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+    }
+
+    .content {
+      text-align: center;
+      width: 380px;
+      height: 480px;
+      position: relative;
+      margin: 6% auto;
+      background: #fff;
+      padding: 5px;
+      overflow: hidden;
+    }
+
+    .button-box {
+      text-align: center;
+      width: 220px;
+      margin: 35px auto;
+      position: relative;
+      box-shadow: 0 0 20px 9px #ff61241f;
+      border-radius: 30px;
+    }
+
+    .input-group {
+      top: 140px;
+      position: absolute;
+      width: 280px;
+      transition: .5s;
+    }
+
+    .input-field {
+      text-align: center;
+      width: 100%;
+      padding: 10px 0;
+      margin: 5px 0;
+      border-left: 0;
+      border-top: 0;
+      border-right: 0;
+      border-bottom: 1px solid #999;
+      outline: none;
+      background: transparent;
+    }
+
+    .submit-btn {
+      text-align: center;
+      width: 85%;
+      padding: 10px 30px;
+      cursor: pointer;
+      display: block;
+      margin: auto;
+      background: linear-gradient(to right, #ff105f, #ffad06);
+      border: 0;
+      outline: none;
+      border-radius: 30px;
+    }
+
+    /* Notification styles */
+    #notification {
+      display: none;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+
+    #notification.success {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    #notification.error {
+      background-color: #f44336;
+      color: white;
+    }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="wrappper">
+    <div class="content">
+      <h2>Book Now</h2>
+      
+      <!-- Notification area -->
+      <div id="notification"></div>
+
+      <!-- Your form elements go here -->
+      <form id="orderForm" class="input-group">
+        <!-- Add your form fields here, including service selection, date, and time -->
+        <label for="service">Select Service:</label>
+        <select id="service" name="service">
+          <!-- Dynamically populate service options using JavaScript -->
+        </select>
+        <br>
+        <label for="amount">Service Amount:</label>
+        <input type="text" id="amount" class="input-field" name="amount" readonly>
+        
+        <label for="date">Select Date:</label>
+        <input type="date" id="date" class="input-field" name="date" required>
+        
+        <label for="time">Select Time:</label>
+        <input type="time" id="time" class="input-field" name="time" required>
+        
+        <!-- Additional form fields go here -->
+        
+        <button type="button" class="submit-btn" onclick="submitOrder()">Submit Order</button>
+      </form>
+    </div>
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const serviceSelect = document.getElementById('service');
+      const amountInput = document.getElementById('amount');
+
+      // Fetch services from the backend and populate the dropdown
+      fetch('{% url "get_services" %}')
+        .then(response => response.json())
+        .then(data => {
+          data.forEach(service => {
+            const option = document.createElement('option');
+            option.value = service.id;
+            option.text = service.title;
+
+            // Set the amount as a data attribute
+            option.setAttribute('data-amount', service.amount);
+            console.log(service);
+            serviceSelect.add(option);
+          });
+        })
+        .catch(error => console.error('Error fetching services:', error));
+
+      // Add an event listener to update the amount when the service is changed
+      serviceSelect.addEventListener('change', function() {
+        const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+
+        // Retrieve the amount from the data attribute
+        const selectedAmount = selectedOption.getAttribute('data-amount');
+
+        // Check if the amount is not undefined before updating the input field
+        if (selectedAmount !== undefined) {
+          amountInput.value = selectedAmount;
+        }
+      });
+    });
+
+    function submitOrder() {
+      // Fetch form data and additional data
+      const form = document.getElementById('orderForm');
+      const formData = new FormData(form);
+      const email = localStorage.getItem('email');  // Fetch email from local storage
+    
+      // Fetch the selected service data
+      const serviceSelect = document.getElementById('service');
+      const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+      const orderId = selectedOption.value;  // Use service ID as orderId
+      const orderTitle = selectedOption.text;  // Use service title as orderTitle
+    
+      // Add additional data to the formData
+      formData.append('email', email);
+      formData.append('orderId', orderId);
+      formData.append('orderTitle', orderTitle);
+    
+      // Send the data to the backend
+      fetch('{% url "submit_order" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-CSRFToken': getCSRFToken(),
+        },
+      })
+        .then(response => response.json())
+        .then(data => {
+          // Handle success, if needed
+          showNotification('Order submitted successfully ! Check Orders in My Profile to track it.', 'success');
+          console.log('Order submitted successfully:', data);
+          
+        })
+        .catch(error => {
+          console.error('Error submitting order:', error);
+          showNotification('Error submitting order', 'error');
+        });
+    }
+
+    function showNotification(message, type = 'success') {
+      var notification = document.getElementById('notification');
+      notification.textContent = message;
+      notification.className = type;
+      notification.style.display = 'block';
+
+      // Hide the notification after 3 seconds
+      setTimeout(function() {
+          notification.style.display = 'none';
+      }, 3000);
+    }      
+  </script>
+{% endblock %}

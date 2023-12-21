@@ -1,0 +1,116 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send and Verify OTP</title>
+</head>
+<body>
+
+<h2>Send OTP</h2>
+<form method="post" action="{% url 'index' %}">
+    {% csrf_token %}
+    <label for="email">Email:</label>
+    <input type="email" name="email" required>
+    <button type="submit" name="send-otp-form">Send OTP</button>
+</form>
+
+{% if message %}
+    <p>{{ message }}</p>
+{% endif %}
+
+<hr>
+
+<h2>Verify OTP</h2>
+<form method="post" action="{% url 'index' %}">
+    {% csrf_token %}
+    <label for="otp">Enter OTP:</label>
+    <input type="number" name="otp" required>
+    <button type="submit" name="verify-otp-form">Verify OTP</button>
+</form>
+<h2>Placing Order</h2>
+<form method ="post" action = "{% url 'place_order'%}">
+    {% csrf_token %}
+    <button type ="submit" name ="place order">Order</button>
+</form>    
+{% if error_message %}
+    <p style="color: red;">{{ error_message }}</p>
+{% endif %}
+
+</body>
+</html>
+function sendOTP() {
+    // Disable the "Send OTP" button during the countdown
+    document.getElementById("sendOTPButton").disabled = true;
+    var email = document.getElementById("signupEmail").value;
+    // Hide the "Verify OTP" button and OTP field during countdown
+    document.getElementById("verifyOTPButton").style.display = "none";
+    document.getElementById("otp-field").style.display = "none";
+
+    // Show the countdown timer
+    var countdown = 30;
+    var timerText = document.getElementById("timer-text");
+    var timerValue = document.getElementById("timer-value");
+    var timerContainer = document.getElementById("timer-container");
+
+    timerText.style.display = "block";
+    timerContainer.style.display = "block";
+
+    var countdownInterval = setInterval(function () {
+        countdown--;
+        timerValue.textContent = countdown;
+
+        if (countdown <= 0) {
+            // Enable the "Send OTP" button and clear the countdown
+            document.getElementById("sendOTPButton").disabled = false;
+            clearInterval(countdownInterval);
+
+            // Show the "Verify OTP" button and OTP field after the countdown
+            document.getElementById("verifyOTPButton").style.display = "block";
+            document.getElementById("otp-field").style.display = "block";
+
+            // Hide the timer text and container
+            timerText.style.display = "none";
+            timerContainer.style.display = "none";
+        }
+    }, 1000);
+
+    // Send data to the backend using fetch or AJAX for sending OTP
+    fetch('/send-otp/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token in headers
+        },
+        body: JSON.stringify({ email }),
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log(data);
+        // Show notification
+        showNotification(data.message);
+        // Show OTP field after successfully sending OTP
+        document.getElementById("otp-field").style.display = "block";
+        // Show the "Verify OTP" button
+        verifyOTPButton.style.display = "block";
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Show error notification
+        showNotification('Error sending OTP', 'error');
+    });
+}
+
+function showNotification(message, type = 'success') {
+    var notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = type;
+    notification.style.display = 'block';
+
+    // Hide the notification after 3 seconds
+    setTimeout(function() {
+        notification.style.display = 'none';
+    }, 3000);
+}

@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SS | {% block title %}{% endblock %}</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        .navbar {
+            background-color: black;
+            width: 100%;
+            padding: 20px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo {
+            padding: 20px;
+            width: 100px;
+            cursor: pointer;
+        }
+
+        .navbar ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        .navbar ul li {
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .navbar ul li a {
+            text-decoration: none;
+            color: white;
+            font-weight: bolder;
+            text-transform: capitalize;
+        }
+
+        .navbar ul li::after {
+            content: '';
+            height: 3px;
+            width: 0;
+            background: #009688;
+            position: absolute;
+            left: 0;
+            bottom: -10px;
+            transition: 0.75s;
+        }
+
+        .navbar ul li:hover::after {
+            width: 100%;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .profile {
+            color: white;
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+    <div class="navbar">
+        <ul>
+            <li><a href="{% url 'index' %}">Home</a></li>
+            <li id="login-signup-li"><a href="{% url 'login-signup' %}">Login/Sign-Up</a></li>
+            <li><a href="{% url 'about-us' %}">About</a></li>
+            <li id="services-li" style="display: none;"><a href="{% url 'service' %}">Services</a></li>
+            <li id="book-now-li" style="display: none;"><a href="{% url 'book-now' %}">Book Now</a></li>
+            <li id="profile" onclick="ProfileForm()" style="display: none;"><a href="#">My Profile</a></li>
+            <li><a href="{% url 'contact-us' %}">Contact-Us</a></li>
+        </ul>
+    </div>
+
+    {% block content %}{% endblock %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const user = localStorage.getItem('user');
+            const is_authenticated = localStorage.getItem('is_authenticated');
+            const role = localStorage.getItem('role');
+            const loginSignupLi = document.getElementById('login-signup-li');
+            const servicesLi = document.getElementById('services-li');
+            const bookNowLi = document.getElementById('book-now-li');
+            const profileLi = document.getElementById('profile');
+            const navbar = document.querySelector('.navbar');
+            const links = navbar.querySelectorAll('ul li a');
+            const indexUrl = "{% url 'index' %}";
+            if (user && is_authenticated) {
+                if (role === 'volunteer') {
+                    servicesLi.style.display = 'block';
+                } else if (role === 'elderly') {
+                    bookNowLi.style.display = 'block';
+                }
+                profileLi.style.display = 'block';
+
+                loginSignupLi.innerHTML = '<a href="#" id="logout-link">Logout</a>';
+                const logoutLink = document.getElementById('logout-link');
+                logoutLink.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('refresh_token');
+                    localStorage.removeItem('user');
+                    localStorage.removeItem('is_authenticated');
+                    localStorage.removeItem('role');
+                    window.location.href = indexUrl;
+                });
+            } else {
+                links.forEach(link => {
+                    if (link.textContent === 'Services' || link.textContent === 'Book Now' || link.textContent === 'My Profile') {
+                        link.parentElement.style.display = 'none';
+                    }
+                });
+
+                loginSignupLi.innerHTML = '<a href="{% url 'login-signup' %}">Login/Sign-Up</a>';
+            }
+        });
+
+        const email = localStorage.getItem('email');
+
+        function getCSRFToken() {
+            const csrfTokenCookie = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                .split('=')[1];
+            return csrfTokenCookie;
+        }
+
+        const profileURL = "{% url 'profile' %}";
+
+        function ProfileForm() {
+            const accessToken = localStorage.getItem('access_token');
+
+            fetch('http://127.0.0.1:8000/api/token/refresh/', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${accessToken}`,
+                },
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Token refresh failed');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    window.location.href = profileURL;
+                })
+                .catch(error => {
+                    console.error('Token refresh error:', error);
+                });
+        }
+    </script>
+</body>
+
+</html>

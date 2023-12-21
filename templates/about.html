@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us{% endblock %}
+{% load static %}
+{% block head %}
+    <link rel="stylesheet" href="{% static 'about.css' %}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+    <section class="about">
+        <div class="main">
+            <img src="{% static 'oo.jpeg' %}">
+            <div class="about-text">
+                <h1>About Us</h1>
+                <h5>Swarn Sarthi</h5>
+                <p>Swarn Sarthi web app is a digital platform designed to connect volunteers with elderly individuals who need assistance with daily tasks, such as grocery shopping, transportation, or even just companionship. The web app aims to bridge the gap between the elderly population and the younger generation by providing a platform for volunteers to offer their time and services to support the elderly community.</p>                
+                <a href= "{% url 'index' %}">
+                    <button type="button">HOME</button>
+                </a>
+            </div>
+        </div>
+    </section>
+{% endblock %}

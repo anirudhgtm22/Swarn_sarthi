@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Services{% endblock %}
+{% load static %}
+{% block head %}
+    <!-- Additional styles or scripts specific to the services page go here -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- custom css file link  -->
+    <link rel="stylesheet" href="{% static 'services.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <h1 class="heading">Services</h1>
+
+    <div class="box-container">
+        {% for order in orders %}
+            <div class="box">
+                <h3>{{ order.service.title}}</h3>
+                <p>{{ order.elderly.user.first_name}}</p>
+                <p>{{ order.elderly.user.address}}</p>
+                <p hidden>{{ order.id }}</p>
+                <p>{{ order.service.description }}</p>
+                <p>{{ order.amount }}</p>
+                <!-- Add the "Accept" button here -->
+                <form id="acceptForm{{ order.id }}" data-order-id="{{ order.id }}" data-volunteer-email="{{ email }}">
+                    {% csrf_token %}
+                    <input type="hidden" name="order_id" value="{{ order.id }}">
+                    {% comment %} <input type="hidden" name="volunteer_email" value="{{ email }}"> {% endcomment %}
+                    <button type="button" class="btn btn-primary" onclick="submitForm({{ order.id }})">Accept</button>
+                </form>
+            </div>
+        {% endfor %}
+    </div>
+
+</div>
+<div id="notification"></div>
+<script>
+    const email = localStorage.getItem('email');
+    console.log("user", email);
+
+    function submitForm(orderId) {
+        const form = document.getElementById(`acceptForm${orderId}`);
+        const formData = new FormData(form);
+        formData.append('email', email);
+        fetch('{% url "service" %}', {
+            method: 'put',
+            body: formData,
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Success:', data);
+            showNotification('Service accepted successfully', 'success');
+            window.location.reload();
+            // Handle success, if needed
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+            showNotification('Error accepting service', 'error');
+            // Handle error, if needed
+        });
+    }
+
+    function showNotification(message, type = 'success') {
+        var notification = document.getElementById('notification');
+        notification.textContent = message;
+        notification.className = type;
+        notification.style.display = 'block';
+
+        // Hide the notification after 3 seconds
+        setTimeout(function () {
+            notification.style.display = 'none';
+        }, 3000);
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        // Get the login/signup list item element
+        const loginSignupLi = document.getElementById('login-signup-li');
+        
+        // Hide the login/signup button
+        if (loginSignupLi) {
+            loginSignupLi.style.display = 'none';
+        }
+    });
+</script>
+<!-- Notification area -->
+
+
+{% endblock %}

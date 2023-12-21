@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us{% endblock %}
+{% load static %}
+{% block head %}
+    <meta charset="UTF-8">
+    <!-- *******  Font Awesome Icons Link  ******* -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- *******  Link To Google Fonts  *******  -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,400;0,500;0,600;0,800;1,900&display=swap"
+        rel="stylesheet">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'contactUs.css' %}">
+{% endblock %}
+{% block content %}
+<div id="notification"></div>
+    <div class="container">
+
+        <!--  *******   Left Section (Column) Starts   *******  -->
+
+        <section class="col left">
+
+            <!--  *******   Title Starts   *******  -->
+
+            <div class="contactTitle">
+                <h2>Get In Touch</h2>
+                <pre>Want to get in touch? We'd love to hear from you. Here's how
+                         you can reach us...</pre>
+            </div>
+
+            <!--  *******   Title Ends   *******  -->
+
+            <!--  *******   Contact Info Starts   *******  -->
+
+            <div class="contactInfo">
+
+                <div class="iconGroup">
+                    <div class="icon">
+                        <i class="fa-solid fa-phone"></i>
+                    </div>
+                    <div class="details">
+                        <span>Phone</span>
+                        <span>+91 110 111 000 1</span>
+                    </div>
+                </div>
+
+                <div class="iconGroup">
+                    <div class="icon">
+                        <i class="fa-solid fa-envelope"></i>
+                    </div>
+                    <div class="details">
+                        <span>Email</span>
+                        <span>abcd@gmail.com</span>
+                    </div>
+                </div>
+
+                <div class="iconGroup">
+                    <div class="icon">
+                        <i class="fa-solid fa-location-dot"></i>
+                    </div>
+                    <div class="details">
+                        <span>Location</span>
+                        <span>A9 Daryaganj Near Police Station</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!--  *******   Contact Info Ends   *******  -->
+
+            <!--  *******   Social Media Starts   *******  -->
+
+            <div class="socialMedia">
+                <a href="#"><i class="fa-brands fa-facebook-f"></i></a>
+                <a href="#"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#"><i class="fa-brands fa-instagram"></i></a>
+                <a href="#"><i class="fa-brands fa-linkedin-in"></i></a>
+            </div>
+
+            <!--  *******   Social Media Ends   *******  -->
+
+        </section>
+
+        <form id="contactForm" method="POST" action="{% url 'contact-us' %}">
+            {% csrf_token %}
+            <h1>Write To Us</h1>
+            <input type="text" id="firstName" name="first_name" placeholder="First Name" required>
+            <input type="text" id="lastName" name="last_name" placeholder="Last Name" required>
+            <input type="email" id="email" name="email" placeholder="Email" required>
+            <input type="text" id="mobile" name="mobile" placeholder="Mobile" required>
+            <h4>Type Your Message Here...</h4>
+            <textarea name="message" required></textarea>
+            <input type="submit" value="Send" id="button">
+        </form>
+		
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const contactForm = document.getElementById('contactForm');
+            const notification = document.getElementById('notification');
+
+            contactForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                // Create FormData object to collect form data
+                const formData = new FormData(contactForm);
+                console.log("ugh", formData);
+                // Use Fetch API to send the form data to the Django view
+                fetch(contactForm.action, {
+                    method: 'POST',
+                    body: formData,
+                })
+                    .then(response => response.json())  // Assuming the server responds with JSON
+                    .then(data => {
+                        showNotification(data.message, 'success');
+                        //contactForm.reset();  // Reset the form
+                    })
+                    .catch(error => {
+                        showNotification('Form submission failed. Please check your inputs.', 'error');
+                    });
+            });
+
+            function showNotification(message, type = 'success') {
+				console.log('Showing notification:', message, type);
+				notification.textContent = message;
+				notification.className = type;
+				notification.style.display = 'block';
+			
+				// Hide the notification after 3 seconds
+				setTimeout(function () {
+					console.log('Hiding notification');
+					notification.style.display = 'none';
+				}, 3000);
+			}
+			
+        });
+    </script>
+    <!-- Notification area -->
+    
+{% endblock %}

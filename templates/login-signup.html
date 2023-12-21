@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+
+{% block title %}About Us{% endblock %}
+{% load static %}
+{% block head %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login/Sign-up</title>
+    <link rel="stylesheet" href="{% static 'login.css' %}">
+    <style>
+        #otp-field, #verifyOTPButton, #notification {
+            display: none;
+        }
+        #timer {
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        #timer-container {
+            text-align: center;
+        }
+        #timer-text {
+            font-size: 16px;
+            margin-top: 10px;
+            color: #777; /* Adjust the color as needed */
+        }
+        
+        /* Add this style to make the 'Send OTP' button visually disabled */
+        #sendOTPButton:disabled {
+            background: #ccc; /* Adjust the background color as needed */
+            cursor: not-allowed;
+        }
+
+        /* Add styles for the notification */
+        #notification {
+            display: none;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+        #notification.success {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #notification.error {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <div class="wrapper">
+        <div class="form-box">
+            <div class="button-box">
+                <div id="btn"></div>
+                <button type="button" class="toggle-btn" onclick="login()">Log In</button>
+                <button type="button" class="toggle-btn" onclick="signup()">Register</button>
+            </div>
+            <form id="login" class="input-group" onsubmit="loginSubmit(event)">
+                {% csrf_token %}
+                <input type="text" class="input-field" id="loginEmail" placeholder="Email" required>
+                <input type="password" class="input-field" id="loginPassword" placeholder="Enter Password" required>
+                {% comment %} <input type="checkbox" class="check-box"><span>Remember Password</span> {% endcomment %}
+                <button type="submit" class="submit-btn">Log In</button>
+            </form>
+
+            <form id="register" class="input-group" onsubmit="signupSubmit(event)">
+                {% csrf_token %}
+                <input type="text" class="input-field" id="signupEmail" placeholder="Email" required>
+                <button type="button" id="sendOTPButton" class="get-otp-btn" onclick="sendOTP()">Send OTP</button>
+                <div id="timer-container">
+                    <p id="timer-text" style="display: none;">Wait for <span id="timer-value">30</span> seconds before requesting a new OTP</p>
+                </div>
+                <div id="otp-field-container">
+                    <input type="text" class="input-field" id="otp-field" placeholder="Enter OTP" required>
+                    <button type="button" id="verifyOTPButton" class="get-otp-btn" onclick="verifyOTP()">Verify OTP</button>
+                </div>
+                <input type="text" class="input-field" id="firstName" placeholder="First Name" required>
+                <input type="text" class="input-field" id="lastName" placeholder="Last Name" required>
+                <input type="password" class="input-field" id="signupPassword" placeholder="Enter Password" required>
+
+                <div id="signup-container">
+                    <input type="radio" name="role" id="elderly" value="elderly" required>
+                    <label for="elderly">Elderly</label>
+                
+                    <input type="radio" name="role" id="volunteer" value="volunteer" required>
+                    <label for="volunteer">Volunteer</label>
+                
+                    <br>
+                
+                    <button type="button" id="signupButton" class="submit-btn" onclick="signupSubmit(event)" disabled>Sign Up</button>
+                </div>
+            </form>
+            
+            <!-- Notification area -->
+            <div id="notification"></div>
+        </div>
+    </div>
+    <script>
+        var x = document.getElementById("login");
+        var y = document.getElementById("register");
+        var z = document.getElementById("btn");
+        var verifyOTPButton = document.getElementById("verifyOTPButton");
+        var countdownInterval;
+        const loginUrl ="{% url 'login-signup' %}"
+        function signup() {
+            x.style.left = "-400px";
+            y.style.left = "50px";
+            z.style.left = "110px";
+        }
+
+        function login() {
+            x.style.left = "50px";
+            y.style.left = "450px";
+            z.style.left = "0";
+        }
+
+        function sendOTP() {
+            // Disable the "Send OTP" button during the countdown
+            document.getElementById("sendOTPButton").disabled = true;
+            var email = document.getElementById("signupEmail").value;
+        
+            // Display the OTP field and the "Verify OTP" button
+            document.getElementById("otp-field").style.display = "block";
+            document.getElementById("verifyOTPButton").style.display = "block";
+            // Start the countdown timer
+            startTimer();
+        
+            // Send data to the backend using fetch or AJAX for sending OTP
+            fetch('/send-otp/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token in headers
+                },
+                body: JSON.stringify({ email }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                // Show notification
+                showNotification(data.message);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Show error notification
+                showNotification('Error sending OTP', 'error');
+            });
+        }
+        
+        function showNotification(message, type = 'success') {
+            var notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = type;
+            notification.style.display = 'block';
+        
+            // Hide the notification after 3 seconds
+            setTimeout(function() {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        {% comment %} function startTimer() {
+            var countdown = 30;
+            var timerValue = document.getElementById("timer-value");
+            var timerContainer = document.getElementById("timer-container");
+
+            timerValue.textContent = countdown;
+            timerContainer.style.display = "block";
+
+            // Disable the "Send OTP" button during the countdown
+            document.getElementById("sendOTPButton").disabled = true;
+
+            countdownInterval = setInterval(function () {
+                countdown--;
+                timerValue.textContent = countdown;
+
+                if (countdown <= 0) {
+                    // Enable the "Send OTP" button and clear the countdown
+                    document.getElementById("sendOTPButton").disabled = false;
+                    clearInterval(countdownInterval);
+
+                    // Hide the timer container
+                    timerContainer.style.display = "none";
+                }
+            }, 1000);
+        } {% endcomment %}
+        function startTimer() {
+            var countdown = 30;
+            var timerValue = document.getElementById("timer-value");
+            var timerText = document.getElementById("timer-text");
+        
+            // Show the timer text
+            timerText.style.display = "block";
+        
+            // Initialize the countdown value
+            timerValue.textContent = countdown;
+        
+            // Update the 'Send OTP' button text during the countdown
+            document.getElementById("sendOTPButton").textContent = "Resend OTP in";
+        
+            // Start the countdown interval
+            countdownInterval = setInterval(function () {
+                countdown--;
+                timerValue.textContent = countdown;
+        
+                if (countdown <= 0) {
+                    // Enable the "Send OTP" button and clear the countdown
+                    document.getElementById("sendOTPButton").disabled = false;
+                    clearInterval(countdownInterval);
+        
+                    // Hide the timer text
+                    timerText.style.display = "none";
+        
+                    // Reset the 'Send OTP' button text
+                    document.getElementById("sendOTPButton").textContent = "Send OTP";
+                }
+            }, 1000);
+        }
+        function verifyOTP() {
+            var otp = document.getElementById("otp-field").value;
+
+            // Send data to the backend using fetch or AJAX for verifying OTP
+            fetch('/verify-otp/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token in headers
+                },
+                body: JSON.stringify({ otp }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                // Handle the response as needed
+                document.getElementById("signupButton").disabled = false;
+                showNotification(data.message, 'success');
+            })
+            .catch(error => {
+                // Show error notification
+                showNotification('Error verifying OTP', 'error');
+            });
+        }
+
+        const indexUrl = "{% url 'index' %}";
+
+        function loginSubmit(event) {
+            event.preventDefault();
+            var email = document.getElementById("loginEmail").value;
+            var password = document.getElementById("loginPassword").value;
+        
+            // Send data to the backend using fetch or AJAX for login
+            fetch('/login/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token in headers
+                },
+                body: JSON.stringify({ email, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Store tokens securely in localStorage or sessionStorage
+                localStorage.setItem('access_token', data.access_token);
+                localStorage.setItem('refresh_token', data.refresh_token);
+                localStorage.setItem('is_authenticated', data.is_authenticated);
+                localStorage.setItem('user', data.user.user);
+                localStorage.setItem('email', data.email);
+                localStorage.setItem('role', data.role);
+                console.log("pprint", localStorage);
+                console.log("pprint", data.user.user);
+                window.location.href = indexUrl;
+                showNotification('Login successful', 'success');
+            })
+            .catch(error => {
+                console.error('Login failed:', error);
+                showNotification('Login failed. Invalid credentials.', 'error');  // Add missing 'error' parameter here
+            });
+        }
+        
+
+        function signupSubmit(event) {
+            event.preventDefault();
+            if (document.getElementById("signupButton").disabled) {
+                alert('Verify email first');
+                return;
+            }
+            var email = document.getElementById("signupEmail").value;
+            var otp = document.getElementById("otp-field").value;
+            var first_name = document.getElementById("firstName").value;
+            var last_name = document.getElementById("lastName").value;
+            var password = document.getElementById("signupPassword").value;
+            var role = document.querySelector('input[name="role"]:checked').value;
+
+            // Send data to the backend using fetch or AJAX for signup
+            fetch('/register/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'), // Include CSRF token in headers
+                },
+                body: JSON.stringify({ email, first_name, last_name, password, role }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                window.location.href = loginUrl;
+                showNotification(data.message, 'success');
+                // Handle the response as needed
+            })
+            .catch(error => {
+                // Show error notification
+                showNotification('Error during registration', 'error');
+            });
+        }
+
+        // Function to get CSRF token from cookie
+        function getCookie(name) {
+            var cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                var cookies = document.cookie.split(';');
+                for (var i = 0; i < cookies.length; i++) {
+                    var cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    </script>
+    {% endblock %}

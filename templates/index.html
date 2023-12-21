@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+{% load static %}
+{% block head %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'styles.css' %}">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+{% endblock %}
+{% block content %}
+    <div class="banner">
+        {% comment %} <div class="navbar">
+            <img src="{% static 'logo.png' %}" alt="Logo">
+            <ul>
+                <li><a href="#">Home</a></li>
+                <li id="login-signup-li"><a href="{% url 'login-signup' %}">Login/Sign-Up</a></li>
+                <li><a href="{% url 'about-us' %}">About</a></li>
+                <li><a href="{% url 'service' %}">Services</a></li>
+                <li><a href="{% url 'contact-us' %}">Contact</a></li>
+            </ul>
+        </div> {% endcomment %}
+        <div class="content">
+            <h1>SWARN SARTHI</h1>
+            <p>Many elderly individuals live alone without family or friends nearby to support them. 
+                <br>They may require assistance in going for walks and participating in recreational activities. 
+                <br>Additionally, they may require access to their medical history and information on nearby hospitals in case of
+                emergencies.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const user = localStorage.getItem('user');
+            const is_authenticated = localStorage.getItem('is_authenticated');
+            const loginSignupLi = document.getElementById('login-signup-li');
+    
+            if (user && is_authenticated) {
+                // Display welcome notification using SweetAlert
+                Swal.fire({
+                    title: `Welcome, ${user}!`,
+                    icon: 'success',
+                    showCancelButton: false,
+                    confirmButtonText: 'OK',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // User acknowledged the welcome notification
+    
+                        // User is authenticated, show "Logout" link
+                        const logoutLi = document.createElement('li');
+                        logoutLi.innerHTML = '<a href="#" id="logout-link">Logout</a>';
+                        document.querySelector('.navbar ul').replaceChild(logoutLi, loginSignupLi);
+    
+                        // Add event listener to the "Logout" link
+                        const logoutLink = document.getElementById('logout-link');
+                        logoutLink.addEventListener('click', function(event) {
+                            event.preventDefault(); // Prevent default link behavior
+    
+                            // Clear tokens and user information from local storage
+                            localStorage.removeItem('access_token');
+                            localStorage.removeItem('refresh_token');
+                            localStorage.removeItem('user');
+                            localStorage.removeItem('is_authenticated');
+    
+                            // Reload the page
+                            location.reload();
+                        });
+                    }
+                });
+            } else {
+                // User is not authenticated, show "Login/Sign-Up" link
+                loginSignupLi.innerHTML = '<a href="{% url 'login-signup' %}">Login/Sign-Up</a>';
+            }
+        });
+    </script>
+{% endblock %}
