@@ -20,6 +20,8 @@ from django.conf.urls.static import static
 from django.urls import path,include
 from rest_framework.routers import DefaultRouter
 from main.views import ServicesViewSet,UserProfileViewSet
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
+
 router = DefaultRouter()
 router.register(r'services', ServicesViewSet)
 router.register(r'profile', UserProfileViewSet, basename='profile')
@@ -29,6 +31,7 @@ urlpatterns = [
     path('',include('main.urls')),
     path('api/', include(router.urls)),
 ]
+urlpatterns += staticfiles_urlpatterns()
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
