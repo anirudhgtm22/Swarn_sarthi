@@ -75,13 +75,13 @@
 
     <div class="navbar">
         <ul>
-            <li><a href="{% url 'index' %}">Home</a></li>
+            {% comment %} <li><a href="{% url 'index' %}">Home</a></li>
             <li id="login-signup-li"><a href="{% url 'login-signup' %}">Login/Sign-Up</a></li>
-            <li><a href="{% url 'about-us' %}">About</a></li>
+            <li><a href="{% url 'about-us' %}">About</a></li> {% endcomment %}
             {% comment %} <li id="services-li" style="display: none;"><a href="{% url 'service' %}">Services</a></li> {% endcomment %}
             {% comment %} <li id="book-now-li" style="display: none;"><a href="{% url 'book-now' %}">Book Now</a></li> {% endcomment %}
-            <li id="profile" onclick="ProfileForm()" style="display: none;"><a href="#">My Profile</a></li>
-            <li><a href="{% url 'contact-us' %}">Contact-Us</a></li>
+            {% comment %} <li id="profile" onclick="ProfileForm()" style="display: none;"><a href="#">My Profile</a></li>
+            <li><a href="{% url 'contact-us' %}">Contact-Us</a></li> {% endcomment %}
         </ul>
     </div>
 
