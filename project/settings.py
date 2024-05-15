@@ -26,10 +26,16 @@ SECRET_KEY = 'django-insecure-o6o0+zrtr3!ayt0d3%q1umduv7f#q-uj91xr#-rb+$r6hg_*5(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['http://localhost:3000']
 
 
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
+    'http://127.0.0.1:8000',  # Also include the Django development server origin
+]
+# CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
 # Application definition
+CORS_ORIGIN_ALLOW_ALL = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -41,7 +47,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'main',
-    
+    'corsheaders',   
 ]
 
 REST_FRAMEWORK = {
@@ -63,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'project.urls'

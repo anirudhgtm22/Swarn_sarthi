@@ -6,31 +6,33 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+from .utils import generate_invoice_number
+from datetime import datetime
+
+# class CustomUserManager(BaseUserManager):
+#     def create_user(self, email, first_name, last_name, role, phone_no=None, password=None, **extra_fields):
+#         print("hi")
+#         email = self.normalize_email(email)
+#         user = self.model(email=email, first_name=first_name, last_name=last_name, phone_no=phone_no, role=role, **extra_fields)
+#         user.set_password(password)
+#         user.save(using=self._db)
+#         if role == 'volunteer': 
+#             VolunteerProfile.objects.create(user=user)
+#         elif role == 'elderly':
+#             ElderlyProfile.objects.create(user=user)
+#         return user
+
+#     def create_superuser(self, email, first_name, last_name,role, phone_no, profile_picture, password=None, **extra_fields):
+#             extra_fields.setdefault('is_staff', True)
+#             extra_fields.setdefault('is_superuser', True)  # Add this line to set the role explicitly
+#             return self.create_user(email, first_name, last_name,role, phone_no, profile_picture, password, **extra_fields)
 
 class CustomUserManager(BaseUserManager):
-    def create_user(self, email, first_name, last_name, role, phone_no=None, profile_picture=None, password=None, **extra_fields):
-        print("hi")
-        email = self.normalize_email(email)
-        user = self.model(email=email, first_name=first_name, last_name=last_name, phone_no=phone_no, profile_picture=profile_picture, role=role, **extra_fields)
-        user.set_password(password)
-        user.save(using=self._db)
-        if role == 'volunteer':
-            VolunteerProfile.objects.create(user=user)
-        elif role == 'elderly':
-            ElderlyProfile.objects.create(user=user)
-        return user
-
-    def create_superuser(self, email, first_name, last_name,role, phone_no, profile_picture, password=None, **extra_fields):
-            extra_fields.setdefault('is_staff', True)
-            extra_fields.setdefault('is_superuser', True)  # Add this line to set the role explicitly
-            return self.create_user(email, first_name, last_name,role, phone_no, profile_picture, password, **extra_fields)
-
-class CustomUserManager(BaseUserManager):
-    def create_user(self, email, first_name, last_name, phone_no, profile_picture, role, password=None, **extra_fields):
+    def create_user(self, email, first_name, last_name,role, password=None, **extra_fields):
         if not email:
             raise ValueError('The Email field must be set')
         email = self.normalize_email(email)
-        user = self.model(email=email, first_name=first_name, last_name=last_name, phone_no=phone_no, profile_picture=profile_picture, role=role, **extra_fields)
+        user = self.model(email=email, first_name=first_name, last_name=last_name, role=role, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -60,7 +62,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     objects = CustomUserManager()
 
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone_no', 'profile_picture', 'role']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'phone_no', 'role']
 
     groups = models.ManyToManyField(Group, verbose_name='groups', blank=True, related_name='customuser_set', related_query_name='user_groups')
     user_permissions = models.ManyToManyField(Permission, verbose_name='user permissions', blank=True, related_name='customuser_set', related_query_name='user_permissions')
@@ -79,7 +81,7 @@ class Service(models.Model):
     description = models.TextField()
     amount = models.DecimalField(default=0, max_digits=10, decimal_places=2)
     created_at = models.DateTimeField(auto_now_add=True)
-
+    image = models.ImageField(null=True,blank=True, upload_to='service/')
     def __str__(self):
         return self.title
 
@@ -97,9 +99,10 @@ class VolunteerProfile(models.Model):
     def __str__(self):
         return f"Volunteer: {self.user.email} - Rating: {self.rating}"
     
+
 class Order(models.Model):
-    elderly = models.ForeignKey(ElderlyProfile, on_delete=models.CASCADE)
-    volunteer = models.ForeignKey(VolunteerProfile, on_delete=models.SET_NULL, null=True, blank=True)
+    elderly = models.ForeignKey(ElderlyProfile, on_delete=models.CASCADE, related_name='orders')
+    volunteer = models.ForeignKey(VolunteerProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='volunteer_orders')
     service = models.ForeignKey(Service, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2, blank=True)
     status = models.CharField(max_length=20, choices=[
@@ -111,17 +114,27 @@ class Order(models.Model):
     completed_at = models.DateTimeField(null=True, blank=True)
     invoice_no = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(default=timezone.now)
+    orderDate = models.DateTimeField(default=datetime.now) 
+    related_documents = models.ManyToManyField('RelatedDocument', blank=True, related_name='orders')  # Updated related_name
 
     def __str__(self):
         return f"Order {self.invoice_no} - Status: {self.status}"
 
     def save(self, *args, **kwargs):
-        # Automatically populate the amount based on the selected service
         if not self.amount:
             self.amount = self.service.amount
-
+        if not self.invoice_no:
+            self.invoice_no = generate_invoice_number()
         super().save(*args, **kwargs)
 
+class RelatedDocument(models.Model):
+    order = models.ForeignKey('Order', on_delete=models.CASCADE, related_name='documents')
+    document = models.FileField(upload_to='order_documents/')
+
+    def __str__(self):
+        return f"Related Document for Order {self.order.invoice_no}"
+
+    
 @receiver(post_save, sender=Order)
 def create_active_order(sender, instance, created, **kwargs):
     if created and instance.status == 'created':
@@ -155,6 +168,7 @@ def delete_active_order(sender, instance, **kwargs):
 class Rating(models.Model):
     order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name='rating')
     value = models.IntegerField()
+    feedback = models.TextField(blank=True, null=True)
 
     def __str__(self):
         return f"Rating for Order {self.order.id} - Value: {self.value}"

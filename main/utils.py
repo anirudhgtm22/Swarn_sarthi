@@ -23,4 +23,12 @@ def send_invoice_email(to_email, invoice_pdf_path):
     print("4")
     email.send()
     print("5")
-  
+
+from datetime import datetime
+
+def generate_invoice_number():
+    current_datetime = datetime.now()
+    day = str(current_datetime.day).zfill(2)
+    month = str(current_datetime.month).zfill(2)
+    hour = str(current_datetime.hour).zfill(2)
+    return f'INV-{day}{month}-{hour}'

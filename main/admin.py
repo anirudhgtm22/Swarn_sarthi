@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomUser, Service, ElderlyProfile, VolunteerProfile, Order, Rating, Invoice, ActiveOrder, Feedback, VolunteerService
+from .models import CustomUser, RelatedDocument, Service, ElderlyProfile, VolunteerProfile, Order, Rating, Invoice, ActiveOrder, Feedback, VolunteerService
 
 # Register the CustomUser model
 @admin.register(CustomUser)
@@ -63,3 +63,8 @@ class FeedbackAdmin(admin.ModelAdmin):
     ordering = ('created_at',)
 
 
+@admin.register(RelatedDocument)
+class RelatedDocumentAdmin(admin.ModelAdmin):
+    list_display = ['order', 'document']
+    search_fields = ['order__invoice_no']
+    list_filter = ['order__status']
